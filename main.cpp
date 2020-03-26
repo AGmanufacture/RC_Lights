@@ -52,29 +52,52 @@ unsigned long czasDoWypelnienia = 10;
 int ButtonLeftPress, ButtonRightPress, ButtonJoystickPress;
 bool ButtonLeftStatus, ButtonRightStatus, ButtonJoystickStatus = false;
 
+// police lights
+bool ktoraDioda;
+int stanNiebieska;
+int stanCzerwona;
+unsigned long przerwaPolicja = 500;
+unsigned long strobePolicja = 50;
+unsigned long czasDoZmiany;
+unsigned long czasStrobe;
+// police lights
+
 
 void setup() {
 
 for (int i = 5; i <= 11; i++)
 pinMode(i,OUTPUT);
+
 pinMode(ButtonLeft, INPUT_PULLUP);
 pinMode(ButtonRight, INPUT_PULLUP);
 pinMode(JoystickButton, INPUT_PULLUP);
 Serial.begin(9600); 
-/* Odczyt osi
-neutral X - 527
-neutral Y > 490
-przód X - 1023 a y 940
-tył X - 0 a y 127
-Lewo Y - < 440
-prawo Y - > 525
-*/
-
 }
 
 void loop() {
-// odczytX = analogRead(AxisX);
-// odczytY = analogRead(AxisY);
+odczytX = analogRead(AxisX);
+odczytY = analogRead(AxisY);
+
+// indicator left
+if (Lights_ONOFF == ON && odczytY >= 0 && odczytY <= 50) {
+    Left_Turn = true;
+}
+else if  (Lights_ONOFF == ON && odczytY >= 0 && odczytY <= 50 && odczytX >= 1010 && odczytX <= 1023) {
+    Left_Turn = true;
+}
+else Left_Turn = false;
+// indicator left
+
+// indicator right
+if (Lights_ONOFF == ON && odczytY >= 1010 && odczytY <= 1023) {
+    Right_Turn = true;
+}
+else if  (Lights_ONOFF == ON && odczytY >= 1010 && odczytY <= 1023 && odczytX >= 1010 && odczytX <= 1023) {
+    Right_Turn = true;
+}
+else  Right_Turn = false;
+// indicator right
+
            
 
 /* Serial.print("odczyt X: \t");
@@ -93,8 +116,6 @@ delay(500); */
         }
     }
     else { ButtonLeftStatus = false;}
-     // Serial.println(Lights_ONOFF);
-     // Serial.println(LightMode);
     // włączanie lewego przycisku - Światła ON/OFF
 
     // włączanie świateł awaryjnych
@@ -113,7 +134,7 @@ delay(500); */
     if (ButtonRightPress == LOW) {
         if (ButtonRightStatus == false) {
         ModeCounter += 1;
-        LightMode = ModeCounter % 3;
+        LightMode = ModeCounter % 4;
         ButtonRightStatus = true;
         }
     }
@@ -121,52 +142,48 @@ delay(500); */
 
     if (Lights_ONOFF == ON) {
         if (LightMode == 0) {
-           Drive_Lights = false;
+           Drive_Lights = true;
            Long_Lights = false;
-           // Emergency_Lights = false;
            Stop = true;
-           Left_Turn = true;
-           Right_Turn = false;
            Police = false;
-           digitalWrite(PoliceRed, HIGH);
+           /* digitalWrite(PoliceRed, HIGH);
            digitalWrite(PoliceBlue, LOW);
-           digitalWrite(ReverseLight, LOW);
+           digitalWrite(ReverseLight, LOW); */
         }
         if (LightMode == 1) {
             Drive_Lights = false;
-            Long_Lights = false;
-            // Emergency_Lights = false;
+            Long_Lights = true;
             Stop = true; 
-            Right_Turn = true;
-            Left_Turn = false;
             Police = false;
-            digitalWrite(PoliceBlue, HIGH);
+           /* digitalWrite(PoliceBlue, HIGH);
             digitalWrite(PoliceRed, LOW);
-            digitalWrite(ReverseLight, LOW);
+            digitalWrite(ReverseLight, LOW); */
          }
         if (LightMode == 2) {
-            Drive_Lights = false;
+            Drive_Lights = true;
             Long_Lights = false;
-            // Emergency_Lights = true;
             Stop = true;
-            Right_Turn = false;
-            Left_Turn = false;
-            Police = true;
-            digitalWrite(ReverseLight,HIGH);
+            Police = false;
+           /* digitalWrite(ReverseLight,HIGH);
             digitalWrite(PoliceBlue, LOW);
-            digitalWrite(PoliceRed, LOW);
+            digitalWrite(PoliceRed, LOW); */
+        }
+        if (LightMode == 3) {
+            Drive_Lights = true;
+            Long_Lights = false;
+            Stop = true;
+            Police = true;
         }
     }
     else if (Lights_ONOFF == OFF) {
         Drive_Lights = false;
         Long_Lights = false;
-        // Emergency_Lights = false;
         Stop = false; 
         Left_Turn = false;
         Right_Turn = false;
         Police = false;
-        analogWrite(BlinkerLeft, LOW);
-        analogWrite(BlinkerRight, LOW);
+        // analogWrite(BlinkerLeft, LOW);
+        // analogWrite(BlinkerRight, LOW);
         analogWrite(DriveLight, LOW);
         analogWrite(StopLight, LOW);
         digitalWrite(PoliceRed, LOW);
@@ -187,7 +204,17 @@ delay(500); */
         analogWrite(DriveLight, DriveBrightnessMax);
     }
     // long lights
-   
+    else if (Drive_Lights == false && Long_Lights == false) {
+        analogWrite(DriveLight, LOW);
+    }
+
+    // stop lights
+    if (Stop == true) {
+        analogWrite(StopLight, StopBrightness);
+    }
+    else analogWrite(StopLight, LOW);
+   // stop lights
+
     // blinker left
     if (Left_Turn == true && Emergency_Lights == false) {
         if (millis() - czasPoprzedniegoWypelnienia >= czasDoWypelnienia) {
@@ -233,14 +260,7 @@ delay(500); */
         digitalWrite(BlinkerRight, LOW);
     }   
     
-    
-
-   // if (Left_Turn == false && Right_Turn == false & Emergency_Lights == false) {
-    //    analogWrite(BlinkerRight, LOW);
-    //    analogWrite(BlinkerLeft, LOW);
-  //  }
-
-    //emergency lights
+    // emergency lights
     if (Emergency_Lights == true) {
         if (millis() - czasPoprzedniegoWypelnienia >= czasDoWypelnienia) {
             wypelnienie = wypelnienie + iloscWypelnienia;
@@ -263,15 +283,33 @@ delay(500); */
     else if (Emergency_Lights == false) {
         wypelnienie = 0;    
     } 
- //emergency lights 
+    // emergency lights 
 
-  //  if (Left_Turn == false && Right_turn == false && Emergency_Lights == false) {
+    // police lights
+    if (Lights_ONOFF == true && Police == true) {
+        digitalWrite(PoliceRed, stanNiebieska);
+        digitalWrite(PoliceBlue, stanCzerwona); 
 
- //   }
+            if (millis() - czasDoZmiany >= przerwaPolicja) {  // zmiana między świeceniem jednej a drugiej led
+            stanNiebieska = LOW;
+            stanCzerwona = LOW;
+            ktoraDioda = !ktoraDioda;
+            czasDoZmiany = millis();
+            }
 
-
-
-    
-  
- 
+            if (millis() - czasStrobe >= strobePolicja) {
+                if (ktoraDioda == false) {
+                    stanNiebieska = !stanNiebieska;
+                }
+                if (ktoraDioda == true) {
+                    stanCzerwona = !stanCzerwona;
+                }
+        czasStrobe = millis();
+            }
+    else {
+        digitalWrite(PoliceRed, LOW);
+        digitalWrite(PoliceBlue, LOW);
+    }
+    // police lights
+    }
 }
