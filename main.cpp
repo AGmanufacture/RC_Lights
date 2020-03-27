@@ -5,8 +5,8 @@
 - włączenie kierunkowskazów +
 - włączenie świateł awaryjnych +
 - włączenie swiateł policyjnych +
-- włączenie świateł hamowania
-- włączenie światła cofania
+- włączenie świateł hamowania +
+- włączenie światła cofania +
 - syrena policyjna z buzzera
 
 */
